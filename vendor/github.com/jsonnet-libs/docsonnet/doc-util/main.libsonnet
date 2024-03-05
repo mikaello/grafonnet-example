@@ -36,7 +36,10 @@
     new(name, url, help, filename='', version='master')::
       {
         name: name,
-        help: help,
+        help:
+          help
+          + std.get(self, 'installTemplate', '') % self
+          + std.get(self, 'usageTemplate', '') % self,
         'import':
           if filename != ''
           then url + '/' + filename
@@ -70,12 +73,34 @@
         help: help,
       },
 
-    withUsageTemplate(template):: {
-      usageTemplate: template,
+    withInstallTemplate(template):: {
+      installTemplate:
+        if template != null
+        then
+          |||
+
+            ## Install
+
+            ```
+            %s
+            ```
+          ||| % template
+        else '',
     },
 
-    withInstallTemplate(template):: {
-      installTemplate: template,
+    withUsageTemplate(template):: {
+      usageTemplate:
+        if template != null
+        then
+          |||
+
+            ## Usage
+
+            ```jsonnet
+            %s
+            ```
+          ||| % template
+        else '',
     },
   },
 
@@ -147,6 +172,26 @@
       type: type,
       default: default,
       enums: enums,
+    },
+    '#fromSchema': d.fn(|||
+      `fromSchema` creates a new function argument, taking a JSON `schema` to describe the type information for this argument.
+
+      Examples:
+
+      ```jsonnet
+      [
+        d.argument.fromSchema('foo', { type: 'string' }),
+        d.argument.fromSchema('bar', { type: 'string', default='loo' }),
+        d.argument.fromSchema('baz', { type: 'number', enum=[1,2,3] }),
+      ]
+      ```
+    |||, [
+      d.arg('name', d.T.string),
+      d.arg('schema', d.T.object),
+    ]),
+    fromSchema(name, schema): {
+      name: name,
+      schema: schema,
     },
   },
   '#arg': self.argument['#new'] + self.func.withHelp('`arg` is a shorthand for `argument.new`'),
